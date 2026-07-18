@@ -24,5 +24,5 @@ jobs:
           test -f .github/CODEOWNERS
           test -f .github/BRANCH_PROTECTION.md
           if test -d tests/player; then
-            node --test tests/player
+            node --test tests/player/*.test.js
           fi
