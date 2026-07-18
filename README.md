@@ -16,6 +16,11 @@ Run the dependency-free unit suite with `npm test`. Compiled-release
 compatibility remains an integration gate in the private pipeline and the Gaia
 Research website; it is deliberately not coupled to private fixtures here.
 
-Publication currently grants repository visibility only. A reusable software
-license must be selected explicitly before the first supported release.
+## License
 
+Milim Player is licensed under the [Apache License 2.0](LICENSE). Copyright
+2026 Marcus Rafael B. Tiongson.
+
+The license covers this runtime source only. It does not grant rights to Milim
+character art, model and scene packs, Gaia Research branding, or private
+production-pipeline materials.
