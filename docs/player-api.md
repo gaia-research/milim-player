@@ -24,12 +24,28 @@ Player v0.2.0 supports release compatibility majors `1` and `2`. A release's
 model and scenes must use a `formatVersion` equal to its declared
 `compatibility.major`; other majors fail with `MILIM_RELEASE_INCOMPATIBLE`.
 
+Every release declares its public runtime provenance in `player`:
+
+```json
+{
+  "repository": "gaia-research/milim-player",
+  "version": "0.2.0",
+  "commit": "<full lowercase 40-character commit>",
+  "entry": "./player/index.js",
+  "license": "Apache-2.0"
+}
+```
+
+`version` is a semantic version and `entry` must be a safe release-relative
+path. The generic public runtime validates this identity and shape but does not
+hardcode one current commit; release assembly and the website own the exact
+commit lock for each published release.
+
 `release.json` is the single runtime manifest. Its `files[]` inventory is the
 release allowlist: the player entry, model, scene documents, fallbacks, model
 textures, and scene resources used at runtime must resolve inside the release
 directory and appear in that inventory. `release.json` itself must not appear
-in `files[]`. No second manifest or public-repository commit identifier is
-required at runtime.
+in `files[]`. No second manifest is required at runtime.
 
 ## Controller
 

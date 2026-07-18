@@ -13,6 +13,7 @@ const RELEASE = /^milim-web-[0-9]+\.[0-9]+\.[0-9]+$/;
 const RELEASE_PATH = /^\.\/[A-Za-z0-9._/-]+$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const COMMIT = /^[a-f0-9]{7,40}$/;
+const PLAYER_COMMIT = /^[a-f0-9]{40}$/;
 
 export function validateRelease(value) {
   object(value, "$", [
@@ -25,7 +26,7 @@ export function validateRelease(value) {
 
   object(value.compatibility, "$.compatibility", ["major"]);
   integer(value.compatibility.major, "$.compatibility.major");
-  versionedEntry(value.player, "$.player", "entry");
+  playerEntry(value.player, "$.player");
   catalogEntry(value.model, "$.model");
   array(value.scenes, "$.scenes", 1);
   value.scenes.forEach((entry, index) => catalogEntry(entry, `$.scenes[${index}]`));
@@ -497,10 +498,13 @@ export function validationDetail(error) {
     : { reason: error instanceof Error ? error.message : String(error) };
 }
 
-function versionedEntry(value, path, pathKey) {
-  object(value, path, ["version", pathKey]);
+function playerEntry(value, path) {
+  object(value, path, ["repository", "version", "commit", "entry", "license"]);
+  equal(value.repository, "gaia-research/milim-player", `${path}.repository`);
   stringPattern(value.version, VERSION, `${path}.version`);
-  releasePath(value[pathKey], `${path}.${pathKey}`);
+  stringPattern(value.commit, PLAYER_COMMIT, `${path}.commit`);
+  releasePath(value.entry, `${path}.entry`);
+  equal(value.license, "Apache-2.0", `${path}.license`);
 }
 
 function catalogEntry(value, path) {
