@@ -1,10 +1,14 @@
-# Frozen Milim Player API v1
+# Milim Player API v0.2.0
+
+This document is the authoritative public API contract for Milim Player
+v0.2.0. The exported interface remains the frozen six-method interface: one
+`mountMilim` factory and the five controller methods documented below.
 
 The website imports exactly one release entry module and calls one factory:
 
 ```js
 const milim = await mountMilim(canvas, {
-  src: "/milim/releases/milim-web-0.1.2/release.json",
+  src: "/milim/releases/milim-web-0.2.0/release.json",
   reducedMotion: false,
   onStatus(event) {}
 });
@@ -13,6 +17,19 @@ const milim = await mountMilim(canvas, {
 `mountMilim(canvas, options)` resolves only after the manifest, selected model,
 selected scene, and minimum render resources are valid. Calls made through the
 returned controller while assets finish decoding are queued in call order.
+
+## Release compatibility and allowlist
+
+Player v0.2.0 supports release compatibility majors `1` and `2`. A release's
+model and scenes must use a `formatVersion` equal to its declared
+`compatibility.major`; other majors fail with `MILIM_RELEASE_INCOMPATIBLE`.
+
+`release.json` is the single runtime manifest. Its `files[]` inventory is the
+release allowlist: the player entry, model, scene documents, fallbacks, model
+textures, and scene resources used at runtime must resolve inside the release
+directory and appear in that inventory. `release.json` itself must not appear
+in `files[]`. No second manifest or public-repository commit identifier is
+required at runtime.
 
 ## Controller
 
