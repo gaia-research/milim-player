@@ -346,6 +346,86 @@ test("release documents reject unknown fields through the stable release error",
   );
 });
 
+test("release loading requires the complete public player provenance envelope", async () => {
+  const fixture = runtimeFixture({
+    release: { player: { version: "0.2.0", entry: "./player/index.js" } },
+  });
+
+  await assertMilimReject(
+    mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime),
+    "MILIM_RELEASE_LOAD_FAILED",
+    "$.player.repository",
+  );
+  assert.deepEqual(fixture.requested, [fixture.releaseURL]);
+});
+
+test("release loading accepts only the public Milim Player repository identity", async () => {
+  const fixture = runtimeFixture({
+    release: { player: { ...releaseFixture().player, repository: "example/player" } },
+  });
+
+  await assertMilimReject(
+    mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime),
+    "MILIM_RELEASE_LOAD_FAILED",
+    "$.player.repository",
+  );
+  assert.deepEqual(fixture.requested, [fixture.releaseURL]);
+});
+
+test("release loading requires a full lowercase 40-character player commit", async () => {
+  for (const commit of ["c".repeat(39), "C".repeat(40)]) {
+    const fixture = runtimeFixture({
+      release: { player: { ...releaseFixture().player, commit } },
+    });
+
+    await assertMilimReject(
+      mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime),
+      "MILIM_RELEASE_LOAD_FAILED",
+      "$.player.commit",
+    );
+    assert.deepEqual(fixture.requested, [fixture.releaseURL]);
+  }
+});
+
+test("release loading requires the Apache-2.0 player license", async () => {
+  const fixture = runtimeFixture({
+    release: { player: { ...releaseFixture().player, license: "MIT" } },
+  });
+
+  await assertMilimReject(
+    mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime),
+    "MILIM_RELEASE_LOAD_FAILED",
+    "$.player.license",
+  );
+  assert.deepEqual(fixture.requested, [fixture.releaseURL]);
+});
+
+test("release loading requires a semantic player version", async () => {
+  const fixture = runtimeFixture({
+    release: { player: { ...releaseFixture().player, version: "v0.2" } },
+  });
+
+  await assertMilimReject(
+    mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime),
+    "MILIM_RELEASE_LOAD_FAILED",
+    "$.player.version",
+  );
+  assert.deepEqual(fixture.requested, [fixture.releaseURL]);
+});
+
+test("release loading requires a safe release-relative player entry", async () => {
+  const fixture = runtimeFixture({
+    release: { player: { ...releaseFixture().player, entry: "./../outside.js" } },
+  });
+
+  await assertMilimReject(
+    mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime),
+    "MILIM_RELEASE_LOAD_FAILED",
+    "$.player.entry",
+  );
+  assert.deepEqual(fixture.requested, [fixture.releaseURL]);
+});
+
 test("release inventory excludes release.json and must list every runtime-known resource", async () => {
   const selfListed = runtimeFixture({
     release: { files: [{ path: "./release.json", bytes: 1, sha256: "a".repeat(64) }] },

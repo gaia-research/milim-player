@@ -17,7 +17,10 @@ source was extracted from the frozen Sol player lane at
 scenes, Studio, compiler, or release evidence.
 
 Each compiled release has one `release.json`. Its `files[]` inventory is the
-runtime resource allowlist; there is no second manifest. See
+runtime resource allowlist, and its `player` block records the public repository,
+semantic version, exact full commit, safe entry path, and Apache-2.0 license.
+The runtime validates that provenance envelope without hardcoding one release's
+commit; there is no second manifest. See
 [PROVENANCE.md](PROVENANCE.md) for the public extraction and licensing scope.
 
 Run the dependency-free unit suite with `npm test`. Compiled-release
