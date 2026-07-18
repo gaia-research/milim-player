@@ -1,0 +1,28 @@
+name: milim-player
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate governance and player
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AGENTS.md
+          test -f .github/CODEOWNERS
+          test -f .github/BRANCH_PROTECTION.md
+          if test -d tests/player; then
+            node --test tests/player
+          fi
