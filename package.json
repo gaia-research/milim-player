@@ -1,0 +1,17 @@
+{
+  "name": "@gaia-research/milim-player",
+  "private": true,
+  "version": "0.2.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gaia-research/milim-player.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/player/*.test.js"
+  }
+}
