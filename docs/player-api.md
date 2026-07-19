@@ -1,14 +1,16 @@
-# Milim Player API v0.2.0
+# Milim Player API v0.3.0
 
 This document is the authoritative public API contract for Milim Player
-v0.2.0. The exported interface remains the frozen six-method interface: one
-`mountMilim` factory and the five controller methods documented below.
+v0.3.0. The exported interface is one `mountMilim` factory and the six
+controller methods documented below: the five frozen v0.2.0 methods plus
+`setSceneRunning`, which gives the background scene an independent lifecycle
+and animation clock.
 
 The website imports exactly one release entry module and calls one factory:
 
 ```js
 const milim = await mountMilim(canvas, {
-  src: "/milim/releases/milim-web-0.2.0/release.json",
+  src: "/milim/releases/milim-web-0.3.0/release.json",
   reducedMotion: false,
   onStatus(event) {}
 });
@@ -20,7 +22,7 @@ returned controller while assets finish decoding are queued in call order.
 
 ## Release compatibility and allowlist
 
-Player v0.2.0 supports release compatibility majors `1` and `2`. A release's
+Player v0.3.0 supports release compatibility majors `1` and `2`. A release's
 model and scenes must use a `formatVersion` equal to its declared
 `compatibility.major`; other majors fail with `MILIM_RELEASE_INCOMPATIBLE`.
 
@@ -29,7 +31,7 @@ Every release declares its public runtime provenance in `player`:
 ```json
 {
   "repository": "gaia-research/milim-player",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "commit": "<full lowercase 40-character commit>",
   "entry": "./player/index.js",
   "license": "Apache-2.0"
@@ -55,6 +57,7 @@ type MilimController = {
   drive(controls: Partial<LiveControls>): Result<LiveControls>;
   perform(motion: "greet" | "point"): Promise<MotionResult>;
   setRunning(running: boolean): void;
+  setSceneRunning(running: boolean): void;
   destroy(): void;
 };
 ```
@@ -84,10 +87,23 @@ resolve `{ status: "completed" }`. A motion always blends back to current idle.
 
 ### Lifecycle
 
-`setRunning(false)` cancels future animation-frame work and pauses scene effects,
-idle, blink, and motion clocks. Resuming does not accumulate hidden elapsed time.
-`destroy()` is idempotent, releases resources/listeners, and settles an active
-motion as interrupted.
+The character and the background scene keep separate animation clocks.
+`frame.clockMs` drives idle, blink, expressions, motion, and physics;
+`frame.sceneClockMs` drives scene layers, scene crossfades, light sweeps, and
+particles.
+
+`setRunning(false)` pauses the character clock. `setSceneRunning(false)` pauses
+the scene clock. Until the first `setSceneRunning` call the scene follows the
+character running state, so callers written against v0.2.0 keep their exact
+single-clock behavior. After the first `setSceneRunning` call the two
+lifecycles are independent: pausing either rig neither stops nor jumps the
+other, and resuming a rig never accumulates hidden elapsed time.
+Animation-frame work is scheduled only while at least one rig is running.
+Document visibility loss and WebGL context loss suspend both rigs; each resumes
+from its own paused clock.
+
+`destroy()` is idempotent, releases resources/listeners, stops both clocks, and
+settles an active motion as interrupted.
 
 ## Structured errors
 

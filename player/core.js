@@ -25,8 +25,13 @@ export function createMilimCore({ model, release, reducedMotion = false, onState
   let appliedLive = neutralLive();
   let ready = false;
   let running = true;
+  let sceneRunning = true;
+  // The scene follows the character running state until the first
+  // setSceneRunning call, so pre-0.3.0 callers keep single-clock behavior.
+  let sceneControlled = false;
   let destroyed = false;
   let clockMs = 0;
+  let sceneClockMs = 0;
   let queue = [];
   let activeMotion = null;
   let latestMotionRequest = null;
@@ -76,12 +81,20 @@ export function createMilimCore({ model, release, reducedMotion = false, onState
     setRunning(value) {
       if (destroyed) return;
       running = Boolean(value);
+      if (!sceneControlled) sceneRunning = running;
+    },
+
+    setSceneRunning(value) {
+      if (destroyed) return;
+      sceneControlled = true;
+      sceneRunning = Boolean(value);
     },
 
     destroy() {
       if (destroyed) return;
       destroyed = true;
       running = false;
+      sceneRunning = false;
       if (activeMotion) settle(activeMotion.request, "interrupted");
       if (latestMotionRequest) settle(latestMotionRequest, "interrupted");
       for (const operation of queue) operation.cancel?.();
@@ -102,8 +115,9 @@ export function createMilimCore({ model, release, reducedMotion = false, onState
     },
     advance(deltaMs) {
       let physicsElapsedMs = 0;
+      const elapsed = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
+      if (!destroyed && ready && sceneRunning) sceneClockMs += elapsed;
       if (!destroyed && ready && running) {
-        const elapsed = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
         physicsElapsedMs = elapsed;
         clockMs += elapsed;
         if (activeMotion) {
@@ -125,6 +139,7 @@ export function createMilimCore({ model, release, reducedMotion = false, onState
     frame,
     get destroyed() { return destroyed; },
     get running() { return running; },
+    get sceneRunning() { return sceneRunning; },
   };
 
   function frame() {
@@ -137,6 +152,7 @@ export function createMilimCore({ model, release, reducedMotion = false, onState
       durable: appliedDurable,
       live: appliedLive,
       clockMs,
+      sceneClockMs,
       motion: activeMotion,
       expressionTransition,
       reducedMotion,

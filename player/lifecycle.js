@@ -1,5 +1,9 @@
 export function createFrameLoop({ core, renderer, scheduler, visibility }) {
   let desiredRunning = true;
+  let desiredSceneRunning = true;
+  // The scene follows the character running state until the first
+  // setSceneRunning call; afterwards the two lifecycles are independent.
+  let sceneControlled = false;
   let contextActive = true;
   let pageActive = visibility ? !visibility.hidden : true;
   let destroyed = false;
@@ -18,7 +22,16 @@ export function createFrameLoop({ core, renderer, scheduler, visibility }) {
     setRunning(running) {
       if (destroyed) return;
       desiredRunning = Boolean(running);
+      if (!sceneControlled) desiredSceneRunning = desiredRunning;
       core.api.setRunning(desiredRunning);
+      previousTimestamp = null;
+      synchronize();
+    },
+    setSceneRunning(running) {
+      if (destroyed) return;
+      sceneControlled = true;
+      desiredSceneRunning = Boolean(running);
+      core.api.setSceneRunning(desiredSceneRunning);
       previousTimestamp = null;
       synchronize();
     },
@@ -37,7 +50,7 @@ export function createFrameLoop({ core, renderer, scheduler, visibility }) {
   };
 
   function active() {
-    return !destroyed && desiredRunning && contextActive && pageActive;
+    return !destroyed && (desiredRunning || desiredSceneRunning) && contextActive && pageActive;
   }
 
   function synchronize() {
