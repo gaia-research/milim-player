@@ -14,11 +14,12 @@ export function composeFrame({
   durable,
   live,
   clockMs,
+  sceneClockMs = clockMs,
   motion,
   expressionTransition = null,
   reducedMotion = false,
 }) {
-  const frame = neutralFrame(model, clockMs);
+  const frame = neutralFrame(model, clockMs, sceneClockMs);
   applyDurable(frame, model, durable);
   applyDrive(frame, live);
   if (!reducedMotion) applyIdleAndBlink(frame, model, clockMs);
@@ -28,9 +29,10 @@ export function composeFrame({
   return frame;
 }
 
-function neutralFrame(model, clockMs) {
+function neutralFrame(model, clockMs, sceneClockMs = clockMs) {
   return {
     clockMs,
+    sceneClockMs,
     scene: null,
     appearance: { hair: null, outfit: null, pose: null },
     expression: null,

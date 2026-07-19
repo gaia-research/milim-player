@@ -132,3 +132,84 @@ function fakeVisibility() {
     listenerCount() { return listener ? 1 : 0; },
   };
 }
+
+test("scene clock advances while the character is paused and neither clock jumps on resume", async () => {
+  const scheduler = createScheduler();
+  const fixture = runtimeFixture({ scheduler });
+  const controller = await mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime);
+  await Promise.resolve();
+  scheduler.frame(100);
+  scheduler.frame(116);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 16);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 16);
+
+  controller.setSceneRunning(true);
+  controller.setRunning(false);
+  assert.equal(scheduler.pending, 1);
+  scheduler.frame(1_000);
+  scheduler.frame(1_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 16);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 32);
+
+  controller.setRunning(true);
+  scheduler.frame(5_000);
+  scheduler.frame(5_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 32);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 48);
+  controller.destroy();
+});
+
+test("character clock advances while the scene is paused and the scene resumes without a jump", async () => {
+  const scheduler = createScheduler();
+  const fixture = runtimeFixture({ scheduler });
+  const controller = await mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime);
+  await Promise.resolve();
+  scheduler.frame(100);
+  scheduler.frame(116);
+
+  controller.setSceneRunning(false);
+  assert.equal(scheduler.pending, 1);
+  scheduler.frame(1_000);
+  scheduler.frame(1_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 32);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 16);
+
+  controller.setSceneRunning(true);
+  scheduler.frame(2_000);
+  scheduler.frame(2_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 48);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 32);
+  controller.destroy();
+});
+
+test("scene follows setRunning until the first setSceneRunning call", async () => {
+  const scheduler = createScheduler();
+  const fixture = runtimeFixture({ scheduler });
+  const controller = await mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime);
+  await Promise.resolve();
+  scheduler.frame(100);
+  scheduler.frame(116);
+
+  controller.setRunning(false);
+  assert.equal(scheduler.pending, 0);
+  scheduler.frame(10_000);
+  controller.setRunning(true);
+  scheduler.frame(20_000);
+  scheduler.frame(20_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 32);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 32);
+  controller.destroy();
+});
+
+test("destroy stops both clocks and scene lifecycle calls become no-ops", async () => {
+  const scheduler = createScheduler();
+  const fixture = runtimeFixture({ scheduler });
+  const controller = await mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime);
+  await Promise.resolve();
+  scheduler.frame(0);
+
+  controller.destroy();
+  controller.setSceneRunning(true);
+  controller.setRunning(true);
+  assert.equal(scheduler.pending, 0);
+});

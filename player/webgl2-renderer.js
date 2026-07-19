@@ -83,7 +83,7 @@ export function createWebGL2Renderer(canvas, options = {}) {
   let currentScene = null;
   let previousScene = null;
   let transitionStartedAt = 0;
-  let lastClockMs = 0;
+  let lastSceneClockMs = 0;
   let gpu = null;
   let resizeObserver = null;
   let contextLost = false;
@@ -157,12 +157,12 @@ export function createWebGL2Renderer(canvas, options = {}) {
       settleOptional(jobs);
       previousScene = currentScene;
       currentScene = scene;
-      transitionStartedAt = lastClockMs;
+      transitionStartedAt = lastSceneClockMs;
     },
 
     draw(frame) {
       if (destroyed || contextLost || !gpu || !model || !currentScene) return;
-      lastClockMs = frame.clockMs;
+      lastSceneClockMs = frame.sceneClockMs;
       resize();
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
@@ -172,7 +172,7 @@ export function createWebGL2Renderer(canvas, options = {}) {
 
       const progress = reducedMotion
         ? 1
-        : clamp((frame.clockMs - transitionStartedAt) / CROSSFADE_MS, 0, 1);
+        : clamp((frame.sceneClockMs - transitionStartedAt) / CROSSFADE_MS, 0, 1);
       if (previousScene && progress < 1) drawScene(previousScene, frame, 1 - progress);
       drawScene(currentScene, frame, previousScene ? progress : 1);
       if (progress >= 1) previousScene = null;
@@ -269,7 +269,7 @@ export function createWebGL2Renderer(canvas, options = {}) {
         opacity: opacity * layer.opacity,
         light: reducedMotion ? 0 : scene.effects.lightSweep,
         reflection: 0,
-        time: frame.clockMs,
+        time: frame.sceneClockMs,
       });
     }
   }
@@ -528,7 +528,7 @@ export function createWebGL2Renderer(canvas, options = {}) {
     if (count === 0) return;
     gl.useProgram(gpu.particles.program);
     gl.bindVertexArray(gpu.particles.vao);
-    gl.uniform1f(gpu.particles.uniform.time, frame.clockMs);
+    gl.uniform1f(gpu.particles.uniform.time, frame.sceneClockMs);
     gl.uniform2fv(gpu.particles.uniform.parallax, [
       frame.secondary.parallax.x * scene.effects.parallax,
       frame.secondary.parallax.y * scene.effects.parallax,

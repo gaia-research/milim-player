@@ -95,6 +95,40 @@ test("WebGL2 renderer decodes native textures, draws planes and particles, resto
   assert.ok(gl.calls.deleteProgram >= 3, "plane, mesh, and particle programs are released");
 });
 
+test("scene planes and particles animate on the independent scene clock", async () => {
+  const gl = fakeWebGL2();
+  const canvas = fakeWebGLCanvas(gl);
+  const renderer = createWebGL2Renderer(canvas, {
+    onContextState() {},
+    platform: {
+      async decodeImage(url) {
+        return { url, close() {} };
+      },
+      devicePixelRatio: () => 1,
+      ResizeObserver: class { observe() {} disconnect() {} },
+      window: null,
+    },
+  });
+  const model = resolvedModel();
+  const scene = resolvedScene();
+  const initialized = await renderer.initialize(model, scene);
+  await initialized.allReady;
+
+  const core = createMilimCore({ model, release: releaseFixture() });
+  core.setReady();
+  core.advance(16);
+  core.api.setSceneRunning(true);
+  core.api.setRunning(false);
+  gl.calls.uniform1f.length = 0;
+  renderer.draw(core.advance(16));
+
+  const times = gl.calls.uniform1f.filter(({ name }) => name === "u_time").map(({ value }) => value);
+  assert.ok(times.includes(32), "scene planes and particles receive the advanced scene clock");
+  assert.ok(times.includes(16), "the paused character keeps its frozen clock");
+  renderer.destroy();
+  core.api.destroy();
+});
+
 test("minimum model and scene texture decode failures retain their owning error codes", async () => {
   const modelRenderer = rendererWithDecoder(async (url) => {
     if (url.includes("base.png")) throw new Error("bad model image");

@@ -89,6 +89,7 @@ export async function mountMilimWithRuntime(canvas, options = {}, runtime) {
     drive: core.api.drive,
     perform: core.api.perform,
     setRunning: frameLoop.setRunning,
+    setSceneRunning: frameLoop.setSceneRunning,
     destroy() {
       if (core.destroyed) return;
       sceneGeneration += 1;
