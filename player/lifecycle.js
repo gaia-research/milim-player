@@ -1,4 +1,11 @@
-export function createFrameLoop({ core, renderer, scheduler, visibility }) {
+export function createFrameLoop({
+  core,
+  renderer,
+  scheduler,
+  visibility,
+  intersectionTarget,
+  createIntersectionObserver,
+}) {
   let desiredRunning = true;
   let desiredSceneRunning = true;
   // The scene follows the character running state until the first
@@ -6,16 +13,42 @@ export function createFrameLoop({ core, renderer, scheduler, visibility }) {
   let sceneControlled = false;
   let contextActive = true;
   let pageActive = visibility ? !visibility.hidden : true;
+  let canvasActive = true;
   let destroyed = false;
   let frameId = null;
   let previousTimestamp = null;
+  let intersectionObserver;
 
   const onVisibilityChange = () => {
     pageActive = !visibility.hidden;
     previousTimestamp = null;
     synchronize();
   };
+  const onIntersectionChange = (entries) => {
+    if (destroyed) return;
+    const entry = entries?.find?.(({ target }) => target === intersectionTarget);
+    if (!entry) return;
+    const active = Boolean(entry.isIntersecting);
+    if (canvasActive === active) return;
+    canvasActive = active;
+    previousTimestamp = null;
+    synchronize();
+  };
   visibility?.addEventListener?.("visibilitychange", onVisibilityChange);
+  if (intersectionTarget && typeof createIntersectionObserver === "function") {
+    try {
+      intersectionObserver = createIntersectionObserver(onIntersectionChange);
+      if (typeof intersectionObserver?.observe !== "function") {
+        intersectionObserver?.disconnect?.();
+        intersectionObserver = undefined;
+      } else {
+        intersectionObserver.observe(intersectionTarget);
+      }
+    } catch {
+      intersectionObserver?.disconnect?.();
+      intersectionObserver = undefined;
+    }
+  }
 
   return {
     start() { synchronize(); },
@@ -46,11 +79,17 @@ export function createFrameLoop({ core, renderer, scheduler, visibility }) {
       destroyed = true;
       cancelPending();
       visibility?.removeEventListener?.("visibilitychange", onVisibilityChange);
+      intersectionObserver?.disconnect?.();
+      intersectionObserver = undefined;
     },
   };
 
   function active() {
-    return !destroyed && (desiredRunning || desiredSceneRunning) && contextActive && pageActive;
+    return !destroyed
+      && (desiredRunning || desiredSceneRunning)
+      && contextActive
+      && pageActive
+      && canvasActive;
   }
 
   function synchronize() {

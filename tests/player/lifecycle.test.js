@@ -96,6 +96,89 @@ test("context loss and document inactivity suspend frames until active again", a
   assert.equal(visibility.listenerCount(), 0);
 });
 
+test("canvas offscreen suspension cancels frames and resumes without hidden elapsed time", async () => {
+  const scheduler = createScheduler();
+  const fixture = runtimeFixture({ scheduler });
+  const intersection = fakeIntersectionObserver();
+  const canvas = fakeCanvas();
+  fixture.runtime.createIntersectionObserver = intersection.create;
+  const controller = await mountMilimWithRuntime(canvas, { src: fixture.releaseURL }, fixture.runtime);
+  await Promise.resolve();
+
+  assert.equal(intersection.target, canvas);
+  scheduler.frame(100);
+  scheduler.frame(116);
+  const clock = fixture.renderer.draws.at(-1).clockMs;
+  const drawsBeforeOffscreen = fixture.renderer.draws.length;
+
+  intersection.setIntersecting(false);
+  assert.equal(scheduler.pending, 0);
+  scheduler.frame(10_000);
+  assert.equal(fixture.renderer.draws.length, drawsBeforeOffscreen);
+
+  intersection.setIntersecting(true);
+  assert.equal(scheduler.pending, 1);
+  scheduler.frame(10_000);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, clock);
+  scheduler.frame(10_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, clock + 16);
+
+  controller.destroy();
+  assert.equal(intersection.disconnected, true);
+});
+
+test("offscreen suspension preserves independent desired character and scene states", async () => {
+  const scheduler = createScheduler();
+  const fixture = runtimeFixture({ scheduler });
+  const intersection = fakeIntersectionObserver();
+  fixture.runtime.createIntersectionObserver = intersection.create;
+  const controller = await mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime);
+  await Promise.resolve();
+
+  controller.setSceneRunning(true);
+  controller.setRunning(false);
+  scheduler.frame(100);
+  scheduler.frame(116);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 0);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 16);
+
+  intersection.setIntersecting(false);
+  intersection.setIntersecting(true);
+  scheduler.frame(10_000);
+  scheduler.frame(10_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 0);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 32);
+
+  controller.setRunning(true);
+  controller.setSceneRunning(false);
+  intersection.setIntersecting(false);
+  intersection.setIntersecting(true);
+  scheduler.frame(20_000);
+  scheduler.frame(20_016);
+  assert.equal(fixture.renderer.draws.at(-1).clockMs, 16);
+  assert.equal(fixture.renderer.draws.at(-1).sceneClockMs, 32);
+  controller.destroy();
+});
+
+test("missing or unusable IntersectionObserver retains active lifecycle behavior", async () => {
+  for (const createIntersectionObserver of [
+    undefined,
+    () => { throw new Error("IntersectionObserver unavailable"); },
+  ]) {
+    const scheduler = createScheduler();
+    const fixture = runtimeFixture({ scheduler });
+    fixture.runtime.createIntersectionObserver = createIntersectionObserver;
+    const controller = await mountMilimWithRuntime(fakeCanvas(), { src: fixture.releaseURL }, fixture.runtime);
+    await Promise.resolve();
+
+    assert.equal(scheduler.pending, 1);
+    scheduler.frame(100);
+    scheduler.frame(116);
+    assert.equal(fixture.renderer.draws.at(-1).clockMs, 16);
+    controller.destroy();
+  }
+});
+
 test("production physics remains frozen across context loss and resumes from the restored frame", async () => {
   const scheduler = createScheduler();
   const fixture = productionRuntimeFixture({ scheduler });
@@ -130,6 +213,26 @@ function fakeVisibility() {
     removeEventListener(type, next) { if (type === "visibilitychange" && listener === next) listener = undefined; },
     setHidden(hidden) { this.hidden = hidden; listener?.(); },
     listenerCount() { return listener ? 1 : 0; },
+  };
+}
+
+function fakeIntersectionObserver() {
+  let callback;
+  let target;
+  let disconnected = false;
+  return {
+    create(next) {
+      callback = next;
+      return {
+        observe(nextTarget) { target = nextTarget; },
+        disconnect() { disconnected = true; },
+      };
+    },
+    setIntersecting(isIntersecting) {
+      callback?.([{ target, isIntersecting }]);
+    },
+    get target() { return target; },
+    get disconnected() { return disconnected; },
   };
 }
 

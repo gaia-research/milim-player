@@ -12,5 +12,8 @@ export function mountMilim(canvas, options = {}) {
       cancel: globalObject.cancelAnimationFrame?.bind(globalObject),
     },
     visibility: globalObject.document,
+    createIntersectionObserver: typeof globalObject.IntersectionObserver === "function"
+      ? (callback) => new globalObject.IntersectionObserver(callback)
+      : undefined,
   });
 }
