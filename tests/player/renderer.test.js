@@ -39,6 +39,21 @@ test("non-centered scene crops cover the full clip-space viewport", () => {
   assert.ok(transform.translation[1] + transform.scale[1] >= 1);
 });
 
+test("plane shaders interpolate mesh UVs at high precision", () => {
+  const gl = fakeWebGL2();
+  const renderer = createWebGL2Renderer(fakeWebGLCanvas(gl), {
+    platform: { devicePixelRatio: () => 1, ResizeObserver: null, window: null },
+  });
+
+  assert.ok(gl.calls.shaderSources.some(({ type, source }) => (
+    type === gl.VERTEX_SHADER && source.includes("out highp vec2 v_uv;")
+  )));
+  assert.ok(gl.calls.shaderSources.some(({ type, source }) => (
+    type === gl.FRAGMENT_SHADER && source.includes("in highp vec2 v_uv;")
+  )));
+  renderer.destroy();
+});
+
 test("WebGL2 renderer decodes native textures, draws planes and particles, restores context, and releases resources", async () => {
   const gl = fakeWebGL2();
   const canvas = fakeWebGLCanvas(gl);
@@ -478,6 +493,7 @@ function fakeWebGL2() {
     bufferData: [],
     stencilFunc: [],
     colorMask: [],
+    shaderSources: [],
   };
   let id = 0;
   let boundTexture = null;
@@ -515,8 +531,8 @@ function fakeWebGL2() {
     KEEP: 29,
     INCR: 30,
     REPLACE: 31,
-    createShader: () => ({ id: ++id }),
-    shaderSource() {},
+    createShader: (type) => ({ id: ++id, type }),
+    shaderSource(shader, source) { calls.shaderSources.push({ type: shader.type, source }); },
     compileShader() {},
     getShaderParameter: () => true,
     getShaderInfoLog: () => "",

@@ -9,7 +9,7 @@ in vec2 a_uv;
 uniform vec2 u_translation;
 uniform vec2 u_scale;
 uniform float u_rotation;
-out vec2 v_uv;
+out highp vec2 v_uv;
 void main() {
   float c = cos(u_rotation);
   float s = sin(u_rotation);
@@ -26,7 +26,7 @@ uniform float u_opacity;
 uniform float u_light;
 uniform float u_time;
 uniform float u_reflection;
-in vec2 v_uv;
+in highp vec2 v_uv;
 out vec4 outColor;
 void main() {
   vec4 color = texture(u_texture, v_uv);
