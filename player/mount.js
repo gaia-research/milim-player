@@ -64,6 +64,8 @@ export async function mountMilimWithRuntime(canvas, options = {}, runtime) {
       renderer,
       scheduler: runtime.scheduler,
       visibility: runtime.visibility,
+      intersectionTarget: canvas,
+      createIntersectionObserver: runtime.createIntersectionObserver,
     });
     frameLoop.setContextActive(contextActive);
     frameLoop.start();

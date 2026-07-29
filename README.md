@@ -2,10 +2,12 @@
 
 Public, dependency-free browser runtime for compiled Milim character releases.
 
-Version 0.3.0 supports Milim release compatibility majors 1 and 2 through the
+Version 0.3.1 supports Milim release compatibility majors 1 and 2 through the
 seven-method public interface: the six frozen v0.2.0 methods plus
 `setSceneRunning`, which controls the background scene's independent lifecycle
-and animation clock. The authoritative contract is
+and animation clock. The player automatically suspends both clocks while its
+canvas is offscreen when the browser provides `IntersectionObserver`, without
+overwriting either clock's desired running state. The authoritative contract is
 [docs/player-api.md](docs/player-api.md).
 
 This repository owns only the player API, renderer, lifecycle, validation, and

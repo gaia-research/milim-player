@@ -1,7 +1,7 @@
-# Milim Player API v0.3.0
+# Milim Player API v0.3.1
 
 This document is the authoritative public API contract for Milim Player
-v0.3.0. The exported interface is one `mountMilim` factory and the six
+v0.3.1. The exported interface is one `mountMilim` factory and the six
 controller methods documented below: the five frozen v0.2.0 methods plus
 `setSceneRunning`, which gives the background scene an independent lifecycle
 and animation clock.
@@ -10,7 +10,7 @@ The website imports exactly one release entry module and calls one factory:
 
 ```js
 const milim = await mountMilim(canvas, {
-  src: "/milim/releases/milim-web-0.3.0/release.json",
+  src: "/milim/releases/milim-web-0.3.1/release.json",
   reducedMotion: false,
   onStatus(event) {}
 });
@@ -22,7 +22,7 @@ returned controller while assets finish decoding are queued in call order.
 
 ## Release compatibility and allowlist
 
-Player v0.3.0 supports release compatibility majors `1` and `2`. A release's
+Player v0.3.1 supports release compatibility majors `1` and `2`. A release's
 model and scenes must use a `formatVersion` equal to its declared
 `compatibility.major`; other majors fail with `MILIM_RELEASE_INCOMPATIBLE`.
 
@@ -31,7 +31,7 @@ Every release declares its public runtime provenance in `player`:
 ```json
 {
   "repository": "gaia-research/milim-player",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "commit": "<full lowercase 40-character commit>",
   "entry": "./player/index.js",
   "license": "Apache-2.0"
@@ -99,8 +99,13 @@ single-clock behavior. After the first `setSceneRunning` call the two
 lifecycles are independent: pausing either rig neither stops nor jumps the
 other, and resuming a rig never accumulates hidden elapsed time.
 Animation-frame work is scheduled only while at least one rig is running.
-Document visibility loss and WebGL context loss suspend both rigs; each resumes
-from its own paused clock.
+Document visibility loss and WebGL context loss suspend both rigs. When the
+browser provides `IntersectionObserver`, moving the mounted canvas fully
+offscreen suspends both rigs as well. Environmental suspension never changes
+either rig's desired running state; each resumes from its own paused clock
+without accumulating offscreen elapsed time. Browsers without
+`IntersectionObserver` retain active lifecycle behavior, and callers may still
+use the explicit lifecycle methods.
 
 `destroy()` is idempotent, releases resources/listeners, stops both clocks, and
 settles an active motion as interrupted.
