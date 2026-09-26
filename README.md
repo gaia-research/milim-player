@@ -1,35 +1,62 @@
 # Milim Player
 
-Public, dependency-free browser runtime for compiled Milim character releases.
+> **Prototype/reference runtime.** Production Milim is moving to **Rive** under
+> [gaia-research/milim#16](https://github.com/gaia-research/milim/issues/16).
+> This repository is retained for the semantic API, lifecycle, renderer, and
+> production lessons it proved. It is no longer the required production runtime.
+
+Milim Player is a public, dependency-free browser-runtime experiment created
+during the first Milim pipeline.
 
 Version 0.3.1 supports Milim release compatibility majors 1 and 2 through the
 seven-method public interface: the six frozen v0.2.0 methods plus
 `setSceneRunning`, which controls the background scene's independent lifecycle
-and animation clock. The player automatically suspends both clocks while its
-canvas is offscreen when the browser provides `IntersectionObserver`, without
-overwriting either clock's desired running state. The authoritative contract is
+and animation clock. The authoritative historical contract remains in
 [docs/player-api.md](docs/player-api.md).
 
-This repository owns only the player API, renderer, lifecycle, validation, and
-public-safe test fixtures. Editable Milim art, models, scenes, Studio, compiler,
-release assembly, and unpublished production evidence remain in the private
-`gaia-research/milim` pipeline.
+## What remains valuable
 
-The initial runtime is under review through a focused draft pull request. Its
-source was extracted from the frozen Sol player lane at
-`f429da50abf3df3bb9079eb2b6f57ad9b7694fcd` without private art, models,
-scenes, Studio, compiler, or release evidence.
+The reboot should selectively reuse the product ideas that survived contact
+with real implementation:
 
-Each compiled release has one `release.json`. Its `files[]` inventory is the
-runtime resource allowlist, and its `player` block records the public repository,
-semantic version, exact full commit, safe entry path, and Apache-2.0 license.
-The runtime validates that provenance envelope without hardcoding one release's
-commit; there is no second manifest. See
-[PROVENANCE.md](PROVENANCE.md) for the public extraction and licensing scope.
+- a small semantic character API instead of website code knowing rig internals
+- durable expression / gesture names
+- clean lifecycle and destroy semantics
+- offscreen and visibility suspension
+- reduced-motion and static fallbacks
+- responsive browser acceptance
+- explicit production provenance
 
-Run the dependency-free unit suite with `npm test`. Compiled-release
-compatibility remains an integration gate in the private pipeline and the Gaia
-Research website; it is deliberately not coupled to private fixtures here.
+Those ideas can sit over the official Rive runtime without Gaia owning meshes,
+deformers, shaders, physics, or a custom model format.
+
+## What not to do
+
+Do not extend this repository into a competing Rive/Live2D engine merely because
+the prototype already contains renderer code. New custom-runtime work should
+require a concrete production need that the Rive stack cannot reasonably meet.
+
+The historical source, tests, and branches stay available for archaeology and
+selective extraction.
+
+## Current production direction
+
+The durable agent brief lives in the private Milim repository:
+
+`docs/MILIM-ALIVE-SHIPPING-BRIEF.md`
+
+Production character authoring uses Rive CLI/RML and, where useful, the official
+Rive desktop MCP/editor. The Gaia Research website should consume an official
+Rive runtime behind a thin semantic adapter.
+
+## Historical API
+
+The old website imported one release entry module and used the controller
+documented in [docs/player-api.md](docs/player-api.md). That interface remains a
+useful reference for naming and behavior, not a compatibility requirement for
+the Rive implementation.
+
+Run the historical dependency-free unit suite with `npm test`.
 
 ## License
 
